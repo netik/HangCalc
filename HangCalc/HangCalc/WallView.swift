@@ -9,15 +9,10 @@ struct MeasurementArrow: View {
     
     var body: some View {
         ZStack {
-            // Arrow line
-            Path { path in
-                path.move(to: start)
-                path.addLine(to: end)
-            }
-            .stroke(AppColors.primary, style: StrokeStyle(lineWidth: 2, dash: [6]))
-            // Arrowheads (ensure correct position and rotation for flipped y)
-            ArrowHead(position: start, direction: angle(from: start, to: end))
-            ArrowHead(position: end, direction: angle(from: end, to: start))
+            // Complete arrow with heads drawn as part of the path
+            ArrowPath(start: start, end: end)
+                .stroke(AppColors.primary, style: StrokeStyle(lineWidth: 2, dash: [6]))
+            
             // Label
             Text(label)
                 .font(.caption2)
@@ -29,34 +24,79 @@ struct MeasurementArrow: View {
                 .cornerRadius(4)
                 .position(midpoint(start, end).offsetBy(dx: 0, dy: -12, flippedY: true))
         }
-        .clipped()
     }
-    // Helper to compute angle (account for flipped y)
-    func angle(from: CGPoint, to: CGPoint) -> Angle {
-        Angle(radians: atan2(Double(to.y - from.y), Double(to.x - from.x)))
-    }
+    
     // Helper to compute midpoint
     func midpoint(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
         CGPoint(x: (a.x + b.x) / 2, y: (a.y + b.y) / 2)
     }
 }
 
-// Arrowhead shape
-struct ArrowHead: View {
-    let position: CGPoint
-    let direction: Angle
-    var body: some View {
-        Path { path in
-            path.move(to: .zero)
-            path.addLine(to: CGPoint(x: -8, y: -5))
-            path.move(to: .zero)
-            path.addLine(to: CGPoint(x: -8, y: 5))
-        }
-        .stroke(AppColors.primary, lineWidth: 2)
-        .rotationEffect(direction)
-        .position(position)
+// Separate path for the arrow to reduce complexity
+struct ArrowPath: Shape {
+    let start: CGPoint
+    let end: CGPoint
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        let arrowLength: CGFloat = 8
+        let arrowAngle: CGFloat = 0.5 // radians, about 30 degrees
+        
+        // Calculate the direction vector
+        let dx = end.x - start.x
+        let dy = end.y - start.y
+        let length = sqrt(dx * dx + dy * dy)
+        let unitX = dx / length
+        let unitY = dy / length
+        
+        // Draw the main line
+        path.move(to: start)
+        path.addLine(to: end)
+        
+        // Draw arrow head at start (pointing toward the line)
+        let startArrowTip = CGPoint(
+            x: start.x + arrowLength * unitX,
+            y: start.y + arrowLength * unitY
+        )
+        let startLeftWing = CGPoint(
+            x: startArrowTip.x - arrowLength * cos(arrowAngle) * unitX + arrowLength * sin(arrowAngle) * unitY,
+            y: startArrowTip.y - arrowLength * cos(arrowAngle) * unitY - arrowLength * sin(arrowAngle) * unitX
+        )
+        let startRightWing = CGPoint(
+            x: startArrowTip.x - arrowLength * cos(arrowAngle) * unitX - arrowLength * sin(arrowAngle) * unitY,
+            y: startArrowTip.y - arrowLength * cos(arrowAngle) * unitY + arrowLength * sin(arrowAngle) * unitX
+        )
+        
+        path.move(to: startArrowTip)
+        path.addLine(to: startLeftWing)
+        path.move(to: startArrowTip)
+        path.addLine(to: startRightWing)
+        
+        // Draw arrow head at end (pointing away from the line)
+        let endArrowTip = CGPoint(
+            x: end.x - arrowLength * unitX,
+            y: end.y - arrowLength * unitY
+        )
+        let endLeftWing = CGPoint(
+            x: endArrowTip.x + arrowLength * cos(arrowAngle) * unitX + arrowLength * sin(arrowAngle) * unitY,
+            y: endArrowTip.y + arrowLength * cos(arrowAngle) * unitY - arrowLength * sin(arrowAngle) * unitX
+        )
+        let endRightWing = CGPoint(
+            x: endArrowTip.x + arrowLength * cos(arrowAngle) * unitX - arrowLength * sin(arrowAngle) * unitY,
+            y: endArrowTip.y + arrowLength * cos(arrowAngle) * unitY + arrowLength * sin(arrowAngle) * unitX
+        )
+        
+        path.move(to: endArrowTip)
+        path.addLine(to: endLeftWing)
+        path.move(to: endArrowTip)
+        path.addLine(to: endRightWing)
+        
+        return path
     }
 }
+
+
 
 // Helper for offset with flipped y
 extension CGPoint {
