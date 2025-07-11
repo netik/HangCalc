@@ -329,8 +329,8 @@ struct PaintingsListSection: View {
     
     var body: some View {
         Section(header: SectionHeader(title: "Paintings")) {
-            ForEach(viewModel.paintings) { painting in
-                PaintingRowView(painting: painting)
+            ForEach(Array(viewModel.paintings.enumerated()), id: \.element.id) { index, painting in
+                PaintingRowView(painting: painting, index: index, viewModel: viewModel)
             }
             .onDelete { idx in
                 viewModel.paintings.remove(atOffsets: idx)
@@ -346,21 +346,157 @@ struct PaintingsListSection: View {
 // Individual Painting Row View
 struct PaintingRowView: View {
     let painting: Painting
+    let index: Int
+    @ObservedObject var viewModel: HangCalcViewModel
     
     var body: some View {
-        HStack(spacing: 12) {
-            PaintingInfoView(painting: painting)
-            Spacer()
-            MountTypeBadgeView(painting: painting)
+        VStack(spacing: 0) {
+            // Main row content
+            HStack(spacing: 12) {
+                PaintingInfoView(painting: painting)
+                Spacer()
+                MountTypeBadgeView(painting: painting)
+                
+                // Action buttons
+                HStack(spacing: 8) {
+                    // Duplicate button
+                    Button(action: {
+                        viewModel.duplicatePainting(at: index)
+                    }) {
+                        Image(systemName: "plus.square.on.square")
+                            .foregroundColor(AppColors.primary)
+                            .font(.caption)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // Edit button
+                    Button(action: {
+                        viewModel.startEditingPainting(at: index)
+                    }) {
+                        Image(systemName: "pencil")
+                            .foregroundColor(AppColors.accent)
+                            .font(.caption)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            
+            // Edit form (shown when editing)
+            if viewModel.editingPaintingIndex == index {
+                EditPaintingForm(viewModel: viewModel)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+            }
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
         .background(AppColors.cardBackground)
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(AppColors.secondary, lineWidth: 1)
         )
+    }
+}
+
+// Edit Painting Form
+struct EditPaintingForm: View {
+    @ObservedObject var viewModel: HangCalcViewModel
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Divider()
+            
+            // Name field
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Name")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                TextField("Painting name", text: $viewModel.editPaintingName)
+                    .textFieldStyle(ProfessionalTextFieldStyle())
+            }
+            
+            // Dimensions
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Width (cm)")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    TextField("20", text: $viewModel.editPaintingWidth)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(ProfessionalTextFieldStyle())
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Height (cm)")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    TextField("25", text: $viewModel.editPaintingHeight)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(ProfessionalTextFieldStyle())
+                }
+            }
+            
+            // Mount type
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Mount Type")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                Picker("Mount Type", selection: $viewModel.editMountTypeIndex) {
+                    Text("D-Ring").tag(D_RING_INDEX)
+                    Text("Wire").tag(WIRE_INDEX)
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .accentColor(AppColors.primary)
+            }
+            
+            // Mount-specific fields
+            if viewModel.editMountTypeIndex == WIRE_INDEX {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Wire Offset from Top (cm)")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                    TextField("10", text: $viewModel.editWireOffset)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(ProfessionalTextFieldStyle())
+                }
+            } else {
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Offset from Top (cm)")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                        TextField("10", text: $viewModel.editDRingOffsetTop)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(ProfessionalTextFieldStyle())
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Offset from Edge (cm)")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                        TextField("10", text: $viewModel.editDRingOffsetEdge)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(ProfessionalTextFieldStyle())
+                    }
+                }
+            }
+            
+            // Action buttons
+            HStack(spacing: 12) {
+                Button("Cancel") {
+                    viewModel.cancelEditing()
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                
+                Spacer()
+                
+                Button("Save") {
+                    viewModel.saveEditedPainting()
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
+        }
     }
 }
 
@@ -562,6 +698,16 @@ class HangCalcViewModel: ObservableObject {
     @Published var spacingMode: SpacingMode = .auto
     @Published var manualSpacing: String = "200"
     
+    // Edit state
+    @Published var editingPaintingIndex: Int? = nil
+    @Published var editPaintingName: String = ""
+    @Published var editPaintingWidth: String = ""
+    @Published var editPaintingHeight: String = ""
+    @Published var editMountTypeIndex: Int = WIRE_INDEX
+    @Published var editWireOffset: String = ""
+    @Published var editDRingOffsetTop: String = ""
+    @Published var editDRingOffsetEdge: String = ""
+    
     var wall: Wall? {
         guard let w = Double(wallWidth), let h = Double(wallHeight),
               w > 0, h > 0 else {
@@ -591,6 +737,81 @@ class HangCalcViewModel: ObservableObject {
     // Helper to check if wall dimensions are valid
     var isWallValid: Bool {
         return wall != nil
+    }
+    
+    // Duplicate a painting
+    func duplicatePainting(at index: Int) {
+        guard index < paintings.count else { return }
+        let original = paintings[index]
+        let duplicate = Painting(
+            name: "\(original.name) (Copy)",
+            width: original.width,
+            height: original.height,
+            mountType: original.mountType
+        )
+        paintings.insert(duplicate, at: index + 1)
+    }
+    
+    // Start editing a painting
+    func startEditingPainting(at index: Int) {
+        guard index < paintings.count else { return }
+        let painting = paintings[index]
+        
+        editingPaintingIndex = index
+        editPaintingName = painting.name
+        editPaintingWidth = String(format: "%.0f", painting.width)
+        editPaintingHeight = String(format: "%.0f", painting.height)
+        
+        switch painting.mountType {
+        case .wire(let offset):
+            editMountTypeIndex = WIRE_INDEX
+            editWireOffset = String(format: "%.0f", offset)
+        case .dRing(let offsetTop, let offsetEdge):
+            editMountTypeIndex = D_RING_INDEX
+            editDRingOffsetTop = String(format: "%.0f", offsetTop)
+            editDRingOffsetEdge = String(format: "%.0f", offsetEdge)
+        }
+    }
+    
+    // Save edited painting
+    func saveEditedPainting() {
+        guard let index = editingPaintingIndex,
+              let width = Double(editPaintingWidth), width > 0,
+              let height = Double(editPaintingHeight), height > 0 else {
+            return
+        }
+        
+        let mount: MountType
+        if editMountTypeIndex == WIRE_INDEX {
+            guard let offset = Double(editWireOffset), offset >= 0 else { return }
+            mount = .wire(offsetFromTop: CGFloat(offset))
+        } else {
+            guard let offsetTop = Double(editDRingOffsetTop), offsetTop >= 0,
+                  let offsetEdge = Double(editDRingOffsetEdge), offsetEdge >= 0 else { return }
+            mount = .dRing(offsetFromTop: CGFloat(offsetTop), offsetFromEdge: CGFloat(offsetEdge))
+        }
+        
+        let updatedPainting = Painting(
+            name: editPaintingName.isEmpty ? "Untitled" : editPaintingName,
+            width: CGFloat(width),
+            height: CGFloat(height),
+            mountType: mount
+        )
+        
+        paintings[index] = updatedPainting
+        cancelEditing()
+    }
+    
+    // Cancel editing
+    func cancelEditing() {
+        editingPaintingIndex = nil
+        editPaintingName = ""
+        editPaintingWidth = ""
+        editPaintingHeight = ""
+        editMountTypeIndex = WIRE_INDEX
+        editWireOffset = ""
+        editDRingOffsetTop = ""
+        editDRingOffsetEdge = ""
     }
 }
 
