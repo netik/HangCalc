@@ -339,6 +339,23 @@ struct PaintingsListSection: View {
                     viewModel.spacingMode = .auto
                 }
             }
+            
+            // Clear All button
+            if !viewModel.paintings.isEmpty {
+                Button(action: {
+                    viewModel.clearAllPaintings()
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "trash.fill")
+                            .foregroundColor(AppColors.error)
+                        Text("Clear All Paintings")
+                            .fontWeight(.medium)
+                            .foregroundColor(AppColors.error)
+                    }
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .padding(.top, 8)
+            }
         }
     }
 }
@@ -353,7 +370,10 @@ struct PaintingRowView: View {
         VStack(spacing: 0) {
             // Main row content
             HStack(spacing: 12) {
-                PaintingInfoView(painting: painting)
+                VStack(alignment: .leading, spacing: 4) {
+                    PaintingInfoView(painting: painting)
+                    HangerCoordinatesView(painting: painting, index: index, viewModel: viewModel)
+                }
                 Spacer()
                 MountTypeBadgeView(painting: painting)
                 
@@ -396,6 +416,49 @@ struct PaintingRowView: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(AppColors.secondary, lineWidth: 1)
         )
+    }
+}
+
+// Hanger Coordinates View
+struct HangerCoordinatesView: View {
+    let painting: Painting
+    let index: Int
+    @ObservedObject var viewModel: HangCalcViewModel
+    
+    var body: some View {
+        if let layout = viewModel.layouts.first(where: { $0.painting.id == painting.id }) {
+            VStack(alignment: .leading, spacing: 2) {
+                switch painting.mountType {
+                case .wire(let offset):
+                    let hangerPoint = layout.mountingPoints.first ?? CGPoint.zero
+                    Text("Wire: (\(String(format: "%.1f", hangerPoint.x)), \(String(format: "%.1f", hangerPoint.y))) cm")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.success.opacity(0.2))
+                        .cornerRadius(4)
+                    
+                case .dRing(let offsetTop, let offsetEdge):
+                    if layout.mountingPoints.count >= 2 {
+                        let leftPoint = layout.mountingPoints[0]
+                        let rightPoint = layout.mountingPoints[1]
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Left: (\(String(format: "%.1f", leftPoint.x)), \(String(format: "%.1f", leftPoint.y))) cm")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.textSecondary)
+                            Text("Right: (\(String(format: "%.1f", rightPoint.x)), \(String(format: "%.1f", rightPoint.y))) cm")
+                                .font(.caption2)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(AppColors.success.opacity(0.2))
+                        .cornerRadius(4)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -566,7 +629,7 @@ struct VisualizationSection: View {
                 HStack {
                     Image(systemName: "eye.fill")
                         .foregroundColor(AppColors.primary)
-                    Text("Visualization")
+                    Text("Your Wall")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.textPrimary)
@@ -812,6 +875,13 @@ class HangCalcViewModel: ObservableObject {
         editWireOffset = ""
         editDRingOffsetTop = ""
         editDRingOffsetEdge = ""
+    }
+    
+    // Clear all paintings
+    func clearAllPaintings() {
+        paintings.removeAll()
+        // Reset spacing mode to auto when clearing
+        spacingMode = .auto
     }
 }
 
