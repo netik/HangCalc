@@ -123,48 +123,124 @@ struct WallScrollView: View {
                 // Table of painting info
                 if !layouts.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("Name").bold().lineLimit(1).minimumScaleFactor(0.7)
-                                Text("Type").bold().lineLimit(1).minimumScaleFactor(0.7)
-                                Text("Offsets").bold().lineLimit(1).minimumScaleFactor(0.7)
-                                Text("Hanger(s)").bold().lineLimit(1).minimumScaleFactor(0.7)
+                        VStack(alignment: .leading, spacing: 0) {
+                            // Header row
+                            HStack(spacing: 0) {
+                                Text("Name")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .frame(width: 80, alignment: .leading)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                
+                                Text("Type")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .frame(width: 60, alignment: .leading)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                
+                                Text("Offsets")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .frame(width: 120, alignment: .leading)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                
+                                Text("Hanger(s)")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .frame(width: 100, alignment: .leading)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
                             }
+                            .background(Color(.systemGray5))
+                            
+                            // Data rows
                             ForEach(layouts) { layout in
-                                HStack(alignment: .top) {
-                                    Text(layout.painting.name).lineLimit(1).minimumScaleFactor(0.7)
+                                HStack(spacing: 0) {
+                                    Text(layout.painting.name)
+                                        .font(.caption)
+                                        .lineLimit(1)
+                                        .frame(width: 80, alignment: .leading)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                    
                                     switch layout.painting.mountType {
                                     case .wire(let offset):
-                                        Text("Wire").lineLimit(1).minimumScaleFactor(0.7)
-                                        Text(String(format: "Top: %.1f cm", offset)).lineLimit(1).minimumScaleFactor(0.7)
+                                        Text("Wire")
+                                            .font(.caption)
+                                            .frame(width: 60, alignment: .leading)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                        
+                                        Text(String(format: "Top: %.1f cm", offset))
+                                            .font(.caption)
+                                            .frame(width: 120, alignment: .leading)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                        
                                         if layout.mountingPoints.count == 1 {
                                             let hanger = layout.mountingPoints[0]
-                                            Text(String(format: "(%.1f, %.1f) cm", hanger.x, hanger.y))
-                                                .font(.caption2).minimumScaleFactor(0.7).lineLimit(1)
+                                            Text(String(format: "(%.1f, %.1f)", hanger.x, hanger.y))
+                                                .font(.caption2)
+                                                .frame(width: 100, alignment: .leading)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
                                         } else {
                                             Text("-")
-                                                .font(.caption2).minimumScaleFactor(0.7).lineLimit(1)
+                                                .font(.caption)
+                                                .frame(width: 100, alignment: .leading)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
                                         }
+                                        
                                     case .dRing(let offsetTop, let offsetEdge):
-                                        Text("D-Ring").lineLimit(1).minimumScaleFactor(0.7)
-                                        Text(String(format: "Top: %.1f cm, Edge: %.1f cm", offsetTop, offsetEdge)).lineLimit(1).minimumScaleFactor(0.7)
+                                        Text("D-Ring")
+                                            .font(.caption)
+                                            .frame(width: 60, alignment: .leading)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                        
+                                        Text(String(format: "T:%.1f, E:%.1f", offsetTop, offsetEdge))
+                                            .font(.caption)
+                                            .frame(width: 120, alignment: .leading)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                        
                                         if layout.mountingPoints.count == 2 {
                                             let left = layout.mountingPoints[0]
                                             let right = layout.mountingPoints[1]
                                             let dist = hypot(right.x - left.x, right.y - left.y)
-                                            Text(String(format: "(%.1f, %.1f) cm, Δ=%.1f cm", left.x, left.y, dist))
-                                                .font(.caption2).minimumScaleFactor(0.7).lineLimit(1)
+                                            Text(String(format: "Δ=%.1f cm", dist))
+                                                .font(.caption2)
+                                                .frame(width: 100, alignment: .leading)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
                                         } else {
                                             Text("-")
-                                                .font(.caption2).minimumScaleFactor(0.7).lineLimit(1)
+                                                .font(.caption)
+                                                .frame(width: 100, alignment: .leading)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
                                         }
                                     }
                                 }
+                                .background(Color(.systemGray6))
+                                
+                                // Add separator between rows
+                                if layout.id != layouts.last?.id {
+                                    Divider()
+                                        .background(Color(.systemGray4))
+                                }
                             }
                         }
-                        .padding(8)
                         .background(Color(.systemGray6))
                         .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
                     }
                 }
                 HStack(spacing: 16) {
