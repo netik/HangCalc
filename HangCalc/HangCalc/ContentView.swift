@@ -826,14 +826,15 @@ struct ContentView: View {
     private var expandedHeight: CGFloat { UIScreen.main.bounds.height - 80 }
     
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                // Main controls (painting list, add, etc)
-                VStack(spacing: 0) {
-                    MainFormView(viewModel: viewModel)
-                    Spacer(minLength: 0)
-                }
-                .padding(.bottom, collapsedHeight)
+        NavigationView {
+            GeometryReader { geo in
+                ZStack(alignment: .bottom) {
+                    // Main controls (painting list, add, etc)
+                    VStack(spacing: 0) {
+                        MainFormView(viewModel: viewModel)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.bottom, collapsedHeight)
                 
                 // Draggable visualization sheet - only show when wall is valid
                 if let wall = viewModel.wall {
@@ -882,7 +883,10 @@ struct ContentView: View {
             }
             .edgesIgnoringSafeArea(.bottom)
             .background(Color(UIColor.systemBackground))
+            .navigationTitle("HangCalc")
+            .navigationBarTitleDisplayMode(.large)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 

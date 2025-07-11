@@ -269,29 +269,18 @@ struct WallScrollView: View {
                 .padding(.bottom, 4)
                 GeometryReader { geo in
                     ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                        // Centering logic
-                        let wallWidth = wall.width * scale * gestureScale
-                        let wallHeight = wall.height * scale * gestureScale
-                        let containerWidth = geo.size.width
-                        let containerHeight = geo.size.height
-                        let offsetX = max((containerWidth - wallWidth) / 2, 0)
-                        let offsetY = max((containerHeight - wallHeight) / 2, 0)
-                        ZStack {
-                            WallView(wall: wall, layouts: layouts, scale: scale * gestureScale)
-                                .contentShape(Rectangle())
-                                .gesture(
-                                    MagnificationGesture()
-                                        .updating($gestureScale) { value, state, _ in
-                                            state = value
-                                        }
-                                        .onEnded { value in
-                                            scale *= value
-                                        }
-                                )
-                        }
-                        .frame(width: wallWidth, height: wallHeight)
-                        .padding(.leading, offsetX)
-                        .padding(.top, offsetY)
+                        WallView(wall: wall, layouts: layouts, scale: scale * gestureScale)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                MagnificationGesture()
+                                    .updating($gestureScale) { value, state, _ in
+                                        state = value
+                                    }
+                                    .onEnded { value in
+                                        scale *= value
+                                    }
+                            )
+                            .frame(minWidth: geo.size.width, minHeight: geo.size.height)
                     }
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(12)
@@ -313,6 +302,11 @@ struct WallView: View {
     var body: some View {
         GeometryReader { geo in
             let wallRect = CGRect(x: 0, y: 0, width: wall.width * scale, height: wall.height * scale)
+            
+            // Calculate centering offset
+            let centerX = (geo.size.width - wallRect.width) / 2
+            let centerY = (geo.size.height - wallRect.height) / 2
+            
             ZStack(alignment: .topLeading) {
                 // Wall
                 Rectangle()
@@ -417,6 +411,7 @@ struct WallView: View {
                 }
             }
             .frame(width: wallRect.width, height: wallRect.height)
+            .offset(x: centerX, y: centerY)
         }
         .aspectRatio(wall.width / wall.height, contentMode: .fit)
     }
