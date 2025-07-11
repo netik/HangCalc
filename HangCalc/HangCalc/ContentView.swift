@@ -826,15 +826,22 @@ struct ContentView: View {
     private var expandedHeight: CGFloat { UIScreen.main.bounds.height - 80 }
     
     var body: some View {
-        NavigationView {
-            GeometryReader { geo in
-                ZStack(alignment: .bottom) {
-                    // Main controls (painting list, add, etc)
-                    VStack(spacing: 0) {
-                        MainFormView(viewModel: viewModel)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.bottom, collapsedHeight)
+        GeometryReader { geo in
+            ZStack(alignment: .bottom) {
+                // Main controls (painting list, add, etc)
+                VStack(spacing: 0) {
+                    // App title
+                    Text("HangCalc")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppColors.textPrimary)
+                        .padding(.top, 20)
+                        .padding(.bottom, 10)
+                    
+                    MainFormView(viewModel: viewModel)
+                    Spacer(minLength: 0)
+                }
+                .padding(.bottom, collapsedHeight)
                 
                 // Draggable visualization sheet - only show when wall is valid
                 if let wall = viewModel.wall {
@@ -883,10 +890,7 @@ struct ContentView: View {
             }
             .edgesIgnoringSafeArea(.bottom)
             .background(Color(UIColor.systemBackground))
-            .navigationTitle("HangCalc")
-            .navigationBarTitleDisplayMode(.large)
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
@@ -897,7 +901,7 @@ struct DraggableSheet<Content: View>: View {
     let expandedHeight: CGFloat
     let content: () -> Content
     
-    @GestureState private var dragState: CGFloat = 03
+    @GestureState private var dragState: CGFloat = 0
     
     var body: some View {
         // Debug prints
@@ -914,7 +918,7 @@ struct DraggableSheet<Content: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(BlurView(style: .systemMaterial))
-        .cornerRadius(16, corners: [.topLeft, .topRight])
+        .clipShape(RoundedCorner(radius: 16, corners: [.topLeft, .topRight]))
         .shadow(radius: 8)
         .frame(height: collapsedHeight + totalHeight)
         .offset(y: totalHeight - currentOffset)
@@ -946,12 +950,7 @@ struct BlurView: UIViewRepresentable {
     func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
 
-// Helper for corner radius on specific corners
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
-    }
-}
+
 
 struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity
