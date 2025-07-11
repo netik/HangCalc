@@ -424,7 +424,8 @@ struct VisualizationSection: View {
     let manualSpacing: String
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
+            // Header with spacing summary
             VStack(spacing: 8) {
                 HStack {
                     Image(systemName: "eye.fill")
@@ -446,18 +447,21 @@ struct VisualizationSection: View {
                     )
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
             
+            // Wall visualization - fill remaining space
             WallScrollView(wall: wall, layouts: layouts)
-                .frame(height: 350)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AppColors.background)
                 .cornerRadius(16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(AppColors.secondary, lineWidth: 1)
                 )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
         }
-        .padding(.horizontal)
-        .padding(.bottom)
     }
 }
 
@@ -559,10 +563,11 @@ class HangCalcViewModel: ObservableObject {
     @Published var manualSpacing: String = "200"
     
     var wall: Wall? {
-        if let w = Double(wallWidth), let h = Double(wallHeight) {
-            return Wall(width: CGFloat(w), height: CGFloat(h))
+        guard let w = Double(wallWidth), let h = Double(wallHeight),
+              w > 0, h > 0 else {
+            return nil
         }
-        return nil
+        return Wall(width: CGFloat(w), height: CGFloat(h))
     }
     
     var layouts: [PaintingLayout] {
@@ -582,32 +587,157 @@ class HangCalcViewModel: ObservableObject {
         }
         return LayoutCalculator.calculateLayouts(wall: wall, paintings: paintings, spacing: spacing)
     }
+    
+    // Helper to check if wall dimensions are valid
+    var isWallValid: Bool {
+        return wall != nil
+    }
 }
 
 struct ContentView: View {
-    @StateObject private var viewModel = HangCalcViewModel()
+    @StateObject var viewModel = HangCalcViewModel()
+    // Bottom sheet state
+    @State private var sheetOffset: CGFloat = 0
+    @State private var lastDragValue: CGFloat = 0
+    
+    // Sheet positions
+    private var collapsedHeight: CGFloat { 220 }
+    private var expandedHeight: CGFloat { UIScreen.main.bounds.height - 80 }
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                MainFormView(viewModel: viewModel)
-                if let wall = viewModel.wall, !viewModel.paintings.isEmpty {
-                    VisualizationSection(
-                        wall: wall,
-                        layouts: viewModel.layouts,
-                        paintings: viewModel.paintings,
-                        spacingMode: viewModel.spacingMode,
-                        manualSpacing: viewModel.manualSpacing
-                    )
+        GeometryReader { geo in
+            ZStack(alignment: .bottom) {
+                // Main controls (painting list, add, etc)
+                VStack(spacing: 0) {
+                    MainFormView(viewModel: viewModel)
+                    Spacer(minLength: 0)
+                }
+                .padding(.bottom, collapsedHeight)
+                
+                // Draggable visualization sheet - only show when wall is valid
+                if let wall = viewModel.wall {
+                    DraggableSheet(
+                        offset: $sheetOffset,
+                        collapsedHeight: collapsedHeight,
+                        expandedHeight: expandedHeight
+                    ) {
+                        VisualizationSection(
+                            wall: wall,
+                            layouts: viewModel.layouts,
+                            paintings: viewModel.paintings,
+                            spacingMode: viewModel.spacingMode,
+                            manualSpacing: viewModel.manualSpacing
+                        )
+                    }
+                } else {
+                    // Show placeholder when wall is invalid
+                    DraggableSheet(
+                        offset: $sheetOffset,
+                        collapsedHeight: collapsedHeight,
+                        expandedHeight: expandedHeight
+                    ) {
+                        VStack(spacing: 16) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.largeTitle)
+                                .foregroundColor(AppColors.warning)
+                            
+                            Text("Invalid Wall Dimensions")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(AppColors.textPrimary)
+                            
+                            Text("Please enter valid width and height values to see the visualization.")
+                                .font(.body)
+                                .foregroundColor(AppColors.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(AppColors.background)
+                        .cornerRadius(16)
+                        .padding()
+                    }
                 }
             }
-            .background(AppColors.background)
-            .navigationTitle("HangCalc")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(AppColors.primary, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .edgesIgnoringSafeArea(.bottom)
+            .background(Color(UIColor.systemBackground))
         }
+    }
+}
+
+// Draggable bottom sheet
+struct DraggableSheet<Content: View>: View {
+    @Binding var offset: CGFloat
+    let collapsedHeight: CGFloat
+    let expandedHeight: CGFloat
+    let content: () -> Content
+    
+    @GestureState private var dragState: CGFloat = 03
+    
+    var body: some View {
+        // Debug prints
+        let totalHeight = max(0, expandedHeight - collapsedHeight)
+        let currentOffset = max(0, min(offset + dragState, totalHeight))
+        
+        VStack(spacing: 0) {
+            Capsule()
+                .frame(width: 40, height: 6)
+                .foregroundColor(Color.secondary.opacity(0.3))
+                .padding(.top, 8)
+                .padding(.bottom, 4)
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .background(BlurView(style: .systemMaterial))
+        .cornerRadius(16, corners: [.topLeft, .topRight])
+        .shadow(radius: 8)
+        .frame(height: collapsedHeight + totalHeight)
+        .offset(y: totalHeight - currentOffset)
+        .gesture(
+            DragGesture()
+                .updating($dragState) { value, state, _ in
+                    state = -value.translation.height
+                }
+                .onEnded { value in
+                    let drag = -value.translation.height
+                    let threshold = totalHeight / 2
+                    if offset + drag > threshold {
+                        offset = totalHeight
+                    } else {
+                        offset = 0
+                    }
+                }
+        )
+        .animation(.interactiveSpring(), value: offset)
+    }
+}
+
+// Blur background helper
+struct BlurView: UIViewRepresentable {
+    let style: UIBlurEffect.Style
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        UIVisualEffectView(effect: UIBlurEffect(style: style))
+    }
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
+}
+
+// Helper for corner radius on specific corners
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }
 

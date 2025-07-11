@@ -220,7 +220,7 @@ struct WallScrollView: View {
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(12)
                 }
-                .frame(height: 350)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .padding()
             .background(Color(UIColor.systemGray5))
@@ -244,98 +244,100 @@ struct WallView: View {
                     .background(Rectangle().fill(AppColors.background))
                     .frame(width: wallRect.width, height: wallRect.height)
                 // Paintings
-                ForEach(layouts) { layout in
-                    let rect = CGRect(x: layout.origin.x * scale, y: (wall.height - layout.origin.y - layout.painting.height) * scale, width: layout.painting.width * scale, height: layout.painting.height * scale)
-                    ZStack(alignment: .topLeading) {
-                        Rectangle()
-                            .fill(AppColors.accent.opacity(0.2))
-                            .frame(width: rect.width, height: rect.height)
-                            .overlay(
-                                Rectangle().stroke(AppColors.accent, lineWidth: 2)
-                            )
-                        Text(layout.painting.name)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(AppColors.textPrimary)
-                            .padding(6)
-                            .background(AppColors.cardBackground.opacity(0.9))
-                            .cornerRadius(6)
-                            .frame(width: rect.width, height: rect.height, alignment: .center)
-                            .multilineTextAlignment(.center)
-                        // Mounting points (flip y so 0 is top of painting)
-                        ForEach(Array(layout.mountingPoints.enumerated()), id: \.0) { idx, point in
-                            Circle()
-                                .fill(AppColors.success)
-                                .frame(width: 10, height: 10)
+                if (layouts.count > 0) {
+                    ForEach(layouts) { layout in
+                        let rect = CGRect(x: layout.origin.x * scale, y: (wall.height - layout.origin.y - layout.painting.height) * scale, width: layout.painting.width * scale, height: layout.painting.height * scale)
+                        ZStack(alignment: .topLeading) {
+                            Rectangle()
+                                .fill(AppColors.accent.opacity(0.2))
+                                .frame(width: rect.width, height: rect.height)
                                 .overlay(
-                                    Circle()
-                                        .stroke(AppColors.cardBackground, lineWidth: 2)
+                                    Rectangle().stroke(AppColors.accent, lineWidth: 2)
                                 )
-                                .position(x: (point.x - layout.origin.x) * scale, y: (layout.painting.height - (point.y - layout.origin.y)) * scale)
+                            Text(layout.painting.name)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(AppColors.textPrimary)
+                                .padding(6)
+                                .background(AppColors.cardBackground.opacity(0.9))
+                                .cornerRadius(6)
+                                .frame(width: rect.width, height: rect.height, alignment: .center)
+                                .multilineTextAlignment(.center)
+                            // Mounting points (flip y so 0 is top of painting)
+                            ForEach(Array(layout.mountingPoints.enumerated()), id: \.0) { idx, point in
+                                Circle()
+                                    .fill(AppColors.success)
+                                    .frame(width: 10, height: 10)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(AppColors.cardBackground, lineWidth: 2)
+                                    )
+                                    .position(x: (point.x - layout.origin.x) * scale, y: (layout.painting.height - (point.y - layout.origin.y)) * scale)
+                            }
                         }
+                        .offset(x: rect.minX, y: rect.minY)
                     }
-                    .offset(x: rect.minX, y: rect.minY)
-                }
-                // Measurement arrows between paintings
-                ForEach(0..<(layouts.count - 1), id: \.self) { i in
-                    let left = layouts[i]
-                    let right = layouts[i + 1]
-                    let leftEdge = CGPoint(x: (left.origin.x + left.painting.width) * scale, y: (wall.height - (left.origin.y + left.painting.height / 2)) * scale)
-                    let rightEdge = CGPoint(x: right.origin.x * scale, y: (wall.height - (right.origin.y + right.painting.height / 2)) * scale)
-                    let distanceCm = (right.origin.x - (left.origin.x + left.painting.width))
-                    MeasurementArrow(
-                        start: leftEdge,
-                        end: rightEdge,
-                        label: String(format: "%.1f cm", distanceCm),
-                        scale: scale
-                    )
-                }
-                // Measurement from leftmost painting to wall left
-                if let first = layouts.first {
-                    let wallLeft = CGPoint(x: 0, y: (wall.height - (first.origin.y + first.painting.height / 2)) * scale)
-                    let paintingLeft = CGPoint(x: first.origin.x * scale, y: (wall.height - (first.origin.y + first.painting.height / 2)) * scale)
-                    let distanceCm = first.origin.x
-                    MeasurementArrow(
-                        start: wallLeft,
-                        end: paintingLeft,
-                        label: String(format: "%.1f cm", distanceCm),
-                        scale: scale
-                    )
-                }
-                // Measurement from rightmost painting to wall right
-                if let last = layouts.last {
-                    let wallRight = CGPoint(x: wall.width * scale, y: (wall.height - (last.origin.y + last.painting.height / 2)) * scale)
-                    let paintingRight = CGPoint(x: (last.origin.x + last.painting.width) * scale, y: (wall.height - (last.origin.y + last.painting.height / 2)) * scale)
-                    let distanceCm = wall.width - (last.origin.x + last.painting.width)
-                    MeasurementArrow(
-                        start: paintingRight,
-                        end: wallRight,
-                        label: String(format: "%.1f cm", distanceCm),
-                        scale: scale
-                    )
-                }
-                // Measurements from top and bottom of each painting to wall edges
-                ForEach(layouts) { layout in
-                    // Top to wall top
-                    let paintingTop = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: (wall.height - layout.origin.y - layout.painting.height) * scale)
-                    let wallTop = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: 0)
-                    let topDistance = wall.height - (layout.origin.y + layout.painting.height)
-                    MeasurementArrow(
-                        start: paintingTop,
-                        end: wallTop,
-                        label: String(format: "%.1f cm", topDistance),
-                        scale: scale
-                    )
-                    // Bottom to wall bottom
-                    let paintingBottom = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: (wall.height - layout.origin.y) * scale)
-                    let wallBottom = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: wall.height * scale)
-                    let bottomDistance = layout.origin.y
-                    MeasurementArrow(
-                        start: wallBottom,
-                        end: paintingBottom,
-                        label: String(format: "%.1f cm", bottomDistance),
-                        scale: scale
-                    )
+                    // Measurement arrows between paintings
+                    ForEach(0..<(layouts.count - 1), id: \.self) { i in
+                        let left = layouts[i]
+                        let right = layouts[i + 1]
+                        let leftEdge = CGPoint(x: (left.origin.x + left.painting.width) * scale, y: (wall.height - (left.origin.y + left.painting.height / 2)) * scale)
+                        let rightEdge = CGPoint(x: right.origin.x * scale, y: (wall.height - (right.origin.y + right.painting.height / 2)) * scale)
+                        let distanceCm = (right.origin.x - (left.origin.x + left.painting.width))
+                        MeasurementArrow(
+                            start: leftEdge,
+                            end: rightEdge,
+                            label: String(format: "%.1f cm", distanceCm),
+                            scale: scale
+                        )
+                    }
+                    // Measurement from leftmost painting to wall left
+                    if let first = layouts.first {
+                        let wallLeft = CGPoint(x: 0, y: (wall.height - (first.origin.y + first.painting.height / 2)) * scale)
+                        let paintingLeft = CGPoint(x: first.origin.x * scale, y: (wall.height - (first.origin.y + first.painting.height / 2)) * scale)
+                        let distanceCm = first.origin.x
+                        MeasurementArrow(
+                            start: wallLeft,
+                            end: paintingLeft,
+                            label: String(format: "%.1f cm", distanceCm),
+                            scale: scale
+                        )
+                    }
+                    // Measurement from rightmost painting to wall right
+                    if let last = layouts.last {
+                        let wallRight = CGPoint(x: wall.width * scale, y: (wall.height - (last.origin.y + last.painting.height / 2)) * scale)
+                        let paintingRight = CGPoint(x: (last.origin.x + last.painting.width) * scale, y: (wall.height - (last.origin.y + last.painting.height / 2)) * scale)
+                        let distanceCm = wall.width - (last.origin.x + last.painting.width)
+                        MeasurementArrow(
+                            start: paintingRight,
+                            end: wallRight,
+                            label: String(format: "%.1f cm", distanceCm),
+                            scale: scale
+                        )
+                    }
+                    // Measurements from top and bottom of each painting to wall edges
+                    ForEach(layouts) { layout in
+                        // Top to wall top
+                        let paintingTop = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: (wall.height - layout.origin.y - layout.painting.height) * scale)
+                        let wallTop = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: 0)
+                        let topDistance = wall.height - (layout.origin.y + layout.painting.height)
+                        MeasurementArrow(
+                            start: paintingTop,
+                            end: wallTop,
+                            label: String(format: "%.1f cm", topDistance),
+                            scale: scale
+                        )
+                        // Bottom to wall bottom
+                        let paintingBottom = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: (wall.height - layout.origin.y) * scale)
+                        let wallBottom = CGPoint(x: (layout.origin.x + layout.painting.width / 2) * scale, y: wall.height * scale)
+                        let bottomDistance = layout.origin.y
+                        MeasurementArrow(
+                            start: wallBottom,
+                            end: paintingBottom,
+                            label: String(format: "%.1f cm", bottomDistance),
+                            scale: scale
+                        )
+                    }
                 }
             }
             .frame(width: wallRect.width, height: wallRect.height)
