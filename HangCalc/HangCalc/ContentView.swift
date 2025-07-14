@@ -76,13 +76,13 @@ struct WallDimensionsSection: View {
     @ObservedObject var viewModel: HangCalcViewModel
     
     var body: some View {
-        Section(header: SectionHeader(title: "Wall Dimensions (cm)")) {
+        Section(header: SectionHeader(title: "Wall Dimensions (\(viewModel.selectedUnit.shortName))")) {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Width")
                         .font(.subheadline)
                         .foregroundColor(AppColors.textSecondary)
-                    TextField("300", text: $viewModel.wallWidth)
+                    TextField(viewModel.selectedUnit == .inches ? "118" : "300", text: $viewModel.wallWidth)
                         .keyboardType(.decimalPad)
                         .textFieldStyle(ProfessionalTextFieldStyle())
                 }
@@ -96,7 +96,7 @@ struct WallDimensionsSection: View {
                     Text("Height")
                         .font(.subheadline)
                         .foregroundColor(AppColors.textSecondary)
-                    TextField("244", text: $viewModel.wallHeight)
+                    TextField(viewModel.selectedUnit == .inches ? "96" : "244", text: $viewModel.wallHeight)
                         .keyboardType(.decimalPad)
                         .textFieldStyle(ProfessionalTextFieldStyle())
                 }
@@ -143,10 +143,10 @@ struct ManualSpacingView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Spacing (cm)")
+                Text("Spacing (\(viewModel.selectedUnit.shortName))")
                     .font(.subheadline)
                     .foregroundColor(AppColors.textSecondary)
-                TextField("200", text: $viewModel.manualSpacing)
+                TextField(viewModel.selectedUnit == .inches ? "79" : "200", text: $viewModel.manualSpacing)
                     .keyboardType(.decimalPad)
                     .textFieldStyle(ProfessionalTextFieldStyle())
             }
@@ -184,20 +184,20 @@ struct AutoSpacingView: View {
     @ObservedObject var viewModel: HangCalcViewModel
     
     var body: some View {
-        if let wall = viewModel.wall {
-            let autoSpacing = LayoutCalculator.calculateAutoSpacing(wall: wall, paintings: viewModel.paintings)
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(AppColors.success)
-                Text("Auto spacing:")
-                    .font(.subheadline)
-                    .foregroundColor(AppColors.textSecondary)
-                Text(String(format: "%.1f cm", autoSpacing))
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(AppColors.textPrimary)
+                    if let wall = viewModel.wall {
+                let autoSpacing = LayoutCalculator.calculateAutoSpacing(wall: wall, paintings: viewModel.paintings)
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(AppColors.success)
+                    Text("Auto spacing:")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                    Text("\(viewModel.formatForDisplay(autoSpacing)) \(viewModel.selectedUnit.shortName)")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(AppColors.textPrimary)
+                }
             }
-        }
     }
 }
 
@@ -218,19 +218,19 @@ struct AddPaintingSection: View {
                 
                 HStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Width (cm)")
+                        Text("Width (\(viewModel.selectedUnit.shortName))")
                             .font(.subheadline)
                             .foregroundColor(AppColors.textSecondary)
-                        TextField("20", text: $viewModel.newPaintingWidth)
+                        TextField(viewModel.selectedUnit == .inches ? "8" : "20", text: $viewModel.newPaintingWidth)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Height (cm)")
+                        Text("Height (\(viewModel.selectedUnit.shortName))")
                             .font(.subheadline)
                             .foregroundColor(AppColors.textSecondary)
-                        TextField("25", text: $viewModel.newPaintingHeight)
+                        TextField(viewModel.selectedUnit == .inches ? "10" : "25", text: $viewModel.newPaintingHeight)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
                     }
@@ -250,29 +250,29 @@ struct AddPaintingSection: View {
                 
                 if viewModel.newMountTypeIndex == WIRE_INDEX {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Offset from top of painting (cm)")
+                        Text("Offset from top of painting (\(viewModel.selectedUnit.shortName))")
                             .font(.subheadline)
                             .foregroundColor(AppColors.textSecondary)
-                        TextField("10", text: $viewModel.newWireOffset)
+                        TextField(viewModel.selectedUnit == .inches ? "4" : "10", text: $viewModel.newWireOffset)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
                     }
                 } else if viewModel.newMountTypeIndex == D_RING_INDEX {
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Offset from top of painting (cm)")
+                            Text("Offset from top of painting (\(viewModel.selectedUnit.shortName))")
                                 .font(.subheadline)
                                 .foregroundColor(AppColors.textSecondary)
-                            TextField("10", text: $viewModel.newDRingOffsetTop)
+                            TextField(viewModel.selectedUnit == .inches ? "4" : "10", text: $viewModel.newDRingOffsetTop)
                                 .keyboardType(.decimalPad)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Offset from edge to center of d-ring (cm)")
+                            Text("Offset from edge to center of d-ring (\(viewModel.selectedUnit.shortName))")
                                 .font(.subheadline)
                                 .foregroundColor(AppColors.textSecondary)
-                            TextField("5", text: $viewModel.newDRingOffsetEdge)
+                            TextField(viewModel.selectedUnit == .inches ? "2" : "5", text: $viewModel.newDRingOffsetEdge)
                                 .keyboardType(.decimalPad)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
                         }
@@ -281,33 +281,37 @@ struct AddPaintingSection: View {
                 
                 Button(action: {
                     guard
-                        let w = Double(viewModel.newPaintingWidth), w > 0,
-                        let h = Double(viewModel.newPaintingHeight), h > 0,
+                        let w = MeasurementConverter.parseMeasurement(viewModel.newPaintingWidth, unit: viewModel.selectedUnit), w > 0,
+                        let h = MeasurementConverter.parseMeasurement(viewModel.newPaintingHeight, unit: viewModel.selectedUnit), h > 0,
                         !viewModel.newPaintingName.isEmpty
                     else { return }
 
+                    // Convert to cm for internal storage
+                    let widthCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(w) : w
+                    let heightCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(h) : h
+
                     let mount: MountType
                     if viewModel.newMountTypeIndex == WIRE_INDEX {
-                        guard let offset = Double(viewModel.newWireOffset), offset >= 0 else { return }
-                        let offsetCGFloat: CGFloat = CGFloat(offset)
-                        mount = .wire(offsetFromTop: offsetCGFloat)
+                        guard let offset = MeasurementConverter.parseMeasurement(viewModel.newWireOffset, unit: viewModel.selectedUnit), offset >= 0 else { return }
+                        let offsetCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(offset) : offset
+                        mount = .wire(offsetFromTop: CGFloat(offsetCm))
                     } else {
                         guard
-                            let offsetTop = Double(viewModel.newDRingOffsetTop), offsetTop >= 0,
-                            let offsetEdge = Double(viewModel.newDRingOffsetEdge), offsetEdge >= 0
+                            let offsetTop = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetTop, unit: viewModel.selectedUnit), offsetTop >= 0,
+                            let offsetEdge = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetEdge, unit: viewModel.selectedUnit), offsetEdge >= 0
                         else { return }
-                        let offsetTopCGFloat: CGFloat = CGFloat(offsetTop)
-                        let offsetEdgeCGFloat: CGFloat = CGFloat(offsetEdge)
-                        mount = .dRing(offsetFromTop: offsetTopCGFloat, offsetFromEdge: offsetEdgeCGFloat)
+                        let offsetTopCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(offsetTop) : offsetTop
+                        let offsetEdgeCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(offsetEdge) : offsetEdge
+                        mount = .dRing(offsetFromTop: CGFloat(offsetTopCm), offsetFromEdge: CGFloat(offsetEdgeCm))
                     }
 
-                    viewModel.paintings.append(Painting(name: viewModel.newPaintingName, width: CGFloat(w), height: CGFloat(h), mountType: mount))
+                    viewModel.paintings.append(Painting(name: viewModel.newPaintingName, width: CGFloat(widthCm), height: CGFloat(heightCm), mountType: mount))
                     viewModel.newPaintingName = ""
-                    viewModel.newPaintingWidth = "20"
-                    viewModel.newPaintingHeight = "25"
-                    viewModel.newWireOffset = "10"
-                    viewModel.newDRingOffsetTop = "10"
-                    viewModel.newDRingOffsetEdge = "5"
+                    viewModel.newPaintingWidth = viewModel.selectedUnit == .inches ? "8" : "20"
+                    viewModel.newPaintingHeight = viewModel.selectedUnit == .inches ? "10" : "25"
+                    viewModel.newWireOffset = viewModel.selectedUnit == .inches ? "4" : "10"
+                    viewModel.newDRingOffsetTop = viewModel.selectedUnit == .inches ? "4" : "10"
+                    viewModel.newDRingOffsetEdge = viewModel.selectedUnit == .inches ? "2" : "5"
                     viewModel.newMountTypeIndex = WIRE_INDEX // default to Wire
                 }) {
                     HStack(spacing: 8) {
@@ -371,7 +375,7 @@ struct PaintingRowView: View {
             // Main row content
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    PaintingInfoView(painting: painting)
+                    PaintingInfoView(painting: painting, viewModel: viewModel)
                     HangerCoordinatesView(painting: painting, index: index, viewModel: viewModel)
                 }
                 Spacer()
@@ -431,7 +435,7 @@ struct HangerCoordinatesView: View {
                 switch painting.mountType {
                 case .wire(let offset):
                     let hangerPoint = layout.mountingPoints.first ?? CGPoint.zero
-                    Text("Wire: (\(String(format: "%.1f", hangerPoint.x)), \(String(format: "%.1f", hangerPoint.y))) cm")
+                    Text("Wire: (\(viewModel.formatCoordinate(hangerPoint.x)) from left, \(viewModel.formatCoordinate(hangerPoint.y)) from floor) \(viewModel.selectedUnit.shortName)")
                         .font(.caption2)
                         .foregroundColor(AppColors.textSecondary)
                         .padding(.horizontal, 6)
@@ -444,10 +448,10 @@ struct HangerCoordinatesView: View {
                         let leftPoint = layout.mountingPoints[0]
                         let rightPoint = layout.mountingPoints[1]
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("Left: (\(String(format: "%.1f", leftPoint.x)), \(String(format: "%.1f", leftPoint.y))) cm")
+                            Text("Left: (\(viewModel.formatCoordinate(leftPoint.x)) from left, \(viewModel.formatCoordinate(leftPoint.y)) from floor) \(viewModel.selectedUnit.shortName)")
                                 .font(.caption2)
                                 .foregroundColor(AppColors.textSecondary)
-                            Text("Right: (\(String(format: "%.1f", rightPoint.x)), \(String(format: "%.1f", rightPoint.y))) cm")
+                                                         Text("Right: (\(viewModel.formatCoordinate(rightPoint.x)) from left, \(viewModel.formatCoordinate(rightPoint.y)) from flo  or) \(viewModel.selectedUnit.shortName)")
                                 .font(.caption2)
                                 .foregroundColor(AppColors.textSecondary)
                         }
@@ -482,19 +486,19 @@ struct EditPaintingForm: View {
             // Dimensions
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Width (cm)")
+                    Text("Width (\(viewModel.selectedUnit.shortName))")
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
-                    TextField("20", text: $viewModel.editPaintingWidth)
+                    TextField(viewModel.selectedUnit == .inches ? "8" : "20", text: $viewModel.editPaintingWidth)
                         .keyboardType(.decimalPad)
                         .textFieldStyle(ProfessionalTextFieldStyle())
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Height (cm)")
+                    Text("Height (\(viewModel.selectedUnit.shortName))")
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
-                    TextField("25", text: $viewModel.editPaintingHeight)
+                    TextField(viewModel.selectedUnit == .inches ? "10" : "25", text: $viewModel.editPaintingHeight)
                         .keyboardType(.decimalPad)
                         .textFieldStyle(ProfessionalTextFieldStyle())
                 }
@@ -516,29 +520,29 @@ struct EditPaintingForm: View {
             // Mount-specific fields
             if viewModel.editMountTypeIndex == WIRE_INDEX {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Wire Offset from Top (cm)")
+                    Text("Wire Offset from Top (\(viewModel.selectedUnit.shortName))")
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
-                    TextField("10", text: $viewModel.editWireOffset)
+                    TextField(viewModel.selectedUnit == .inches ? "4" : "10", text: $viewModel.editWireOffset)
                         .keyboardType(.decimalPad)
                         .textFieldStyle(ProfessionalTextFieldStyle())
                 }
             } else {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Offset from Top (cm)")
+                        Text("Offset from Top (\(viewModel.selectedUnit.shortName))")
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary)
-                        TextField("10", text: $viewModel.editDRingOffsetTop)
+                        TextField(viewModel.selectedUnit == .inches ? "4" : "10", text: $viewModel.editDRingOffsetTop)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Offset from Edge (cm)")
+                        Text("Offset from Edge (\(viewModel.selectedUnit.shortName))")
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary)
-                        TextField("10", text: $viewModel.editDRingOffsetEdge)
+                        TextField(viewModel.selectedUnit == .inches ? "2" : "5", text: $viewModel.editDRingOffsetEdge)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
                     }
@@ -566,6 +570,7 @@ struct EditPaintingForm: View {
 // Painting Info View
 struct PaintingInfoView: View {
     let painting: Painting
+    @ObservedObject var viewModel: HangCalcViewModel
     
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -573,7 +578,7 @@ struct PaintingInfoView: View {
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.textPrimary)
-            Text("\(Int(painting.width)) × \(Int(painting.height)) cm")
+            Text("\(viewModel.formatForDisplay(painting.width)) × \(viewModel.formatForDisplay(painting.height)) \(viewModel.selectedUnit.shortName)")
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary)
         }
@@ -621,6 +626,7 @@ struct VisualizationSection: View {
     let paintings: [Painting]
     let spacingMode: SpacingMode
     let manualSpacing: String
+    @ObservedObject var viewModel: HangCalcViewModel
     
     var body: some View {
         VStack(spacing: 8) {
@@ -642,7 +648,8 @@ struct VisualizationSection: View {
                         spacingMode: spacingMode,
                         manualSpacing: manualSpacing,
                         wall: wall,
-                        paintings: paintings
+                        paintings: paintings,
+                        viewModel: viewModel
                     )
                 }
             }
@@ -650,7 +657,7 @@ struct VisualizationSection: View {
             .padding(.top, 8)
             
             // Wall visualization - fill remaining space
-            WallScrollView(wall: wall, layouts: layouts)
+            WallScrollView(wall: wall, layouts: layouts, viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AppColors.background)
                 .cornerRadius(16)
@@ -670,6 +677,7 @@ struct SpacingSummaryView: View {
     let manualSpacing: String
     let wall: Wall
     let paintings: [Painting]
+    @ObservedObject var viewModel: HangCalcViewModel
     
     var body: some View {
         HStack(spacing: 12) {
@@ -694,13 +702,13 @@ struct SpacingSummaryView: View {
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary)
                 if spacingMode == .manual {
-                    Text("\(manualSpacing) cm")
+                    Text("\(manualSpacing) \(viewModel.selectedUnit.shortName)")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.textPrimary)
                 } else {
                     let autoSpacing = LayoutCalculator.calculateAutoSpacing(wall: wall, paintings: paintings)
-                    Text("\(String(format: "%.1f", autoSpacing)) cm")
+                    Text("\(viewModel.formatForDisplay(autoSpacing)) \(viewModel.selectedUnit.shortName)")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(AppColors.textPrimary)
@@ -748,6 +756,7 @@ struct MainFormView: View {
 }
 
 class HangCalcViewModel: ObservableObject {
+    @Published var selectedUnit: MeasurementUnit = .centimeters
     @Published var wallWidth: String = "300"
     @Published var wallHeight: String = "244"
     @Published var paintings: [Painting] = []
@@ -772,11 +781,17 @@ class HangCalcViewModel: ObservableObject {
     @Published var editDRingOffsetEdge: String = ""
     
     var wall: Wall? {
-        guard let w = Double(wallWidth), let h = Double(wallHeight),
+        guard let w = MeasurementConverter.parseMeasurement(wallWidth, unit: selectedUnit),
+              let h = MeasurementConverter.parseMeasurement(wallHeight, unit: selectedUnit),
               w > 0, h > 0 else {
             return nil
         }
-        return Wall(width: CGFloat(w), height: CGFloat(h))
+        
+        // Convert to cm for internal calculations
+        let widthCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(w) : w
+        let heightCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(h) : h
+        
+        return Wall(width: CGFloat(widthCm), height: CGFloat(heightCm))
     }
     
     var layouts: [PaintingLayout] {
@@ -789,7 +804,9 @@ class HangCalcViewModel: ObservableObject {
             case .auto:
                 spacing = LayoutCalculator.calculateAutoSpacing(wall: wall, paintings: paintings)
             case .manual:
-                spacing = CGFloat(Double(manualSpacing) ?? 200)
+                let spacingValue = MeasurementConverter.parseMeasurement(manualSpacing, unit: selectedUnit) ?? 200
+                let spacingCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(spacingValue) : spacingValue
+                spacing = CGFloat(spacingCm)
             }
         } else {
             spacing = 200
@@ -822,42 +839,49 @@ class HangCalcViewModel: ObservableObject {
         
         editingPaintingIndex = index
         editPaintingName = painting.name
-        editPaintingWidth = String(format: "%.0f", painting.width)
-        editPaintingHeight = String(format: "%.0f", painting.height)
+        editPaintingWidth = formatForDisplay(painting.width)
+        editPaintingHeight = formatForDisplay(painting.height)
         
         switch painting.mountType {
         case .wire(let offset):
             editMountTypeIndex = WIRE_INDEX
-            editWireOffset = String(format: "%.0f", offset)
+            editWireOffset = formatForDisplay(offset)
         case .dRing(let offsetTop, let offsetEdge):
             editMountTypeIndex = D_RING_INDEX
-            editDRingOffsetTop = String(format: "%.0f", offsetTop)
-            editDRingOffsetEdge = String(format: "%.0f", offsetEdge)
+            editDRingOffsetTop = formatForDisplay(offsetTop)
+            editDRingOffsetEdge = formatForDisplay(offsetEdge)
         }
     }
     
     // Save edited painting
     func saveEditedPainting() {
         guard let index = editingPaintingIndex,
-              let width = Double(editPaintingWidth), width > 0,
-              let height = Double(editPaintingHeight), height > 0 else {
+              let width = MeasurementConverter.parseMeasurement(editPaintingWidth, unit: selectedUnit), width > 0,
+              let height = MeasurementConverter.parseMeasurement(editPaintingHeight, unit: selectedUnit), height > 0 else {
             return
         }
         
+        // Convert to cm for internal storage
+        let widthCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(width) : width
+        let heightCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(height) : height
+        
         let mount: MountType
         if editMountTypeIndex == WIRE_INDEX {
-            guard let offset = Double(editWireOffset), offset >= 0 else { return }
-            mount = .wire(offsetFromTop: CGFloat(offset))
+            guard let offset = MeasurementConverter.parseMeasurement(editWireOffset, unit: selectedUnit), offset >= 0 else { return }
+            let offsetCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(offset) : offset
+            mount = .wire(offsetFromTop: CGFloat(offsetCm))
         } else {
-            guard let offsetTop = Double(editDRingOffsetTop), offsetTop >= 0,
-                  let offsetEdge = Double(editDRingOffsetEdge), offsetEdge >= 0 else { return }
-            mount = .dRing(offsetFromTop: CGFloat(offsetTop), offsetFromEdge: CGFloat(offsetEdge))
+            guard let offsetTop = MeasurementConverter.parseMeasurement(editDRingOffsetTop, unit: selectedUnit), offsetTop >= 0,
+                  let offsetEdge = MeasurementConverter.parseMeasurement(editDRingOffsetEdge, unit: selectedUnit), offsetEdge >= 0 else { return }
+            let offsetTopCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(offsetTop) : offsetTop
+            let offsetEdgeCm = selectedUnit == .inches ? MeasurementConverter.inchesToCm(offsetEdge) : offsetEdge
+            mount = .dRing(offsetFromTop: CGFloat(offsetTopCm), offsetFromEdge: CGFloat(offsetEdgeCm))
         }
         
         let updatedPainting = Painting(
             name: editPaintingName.isEmpty ? "Untitled" : editPaintingName,
-            width: CGFloat(width),
-            height: CGFloat(height),
+            width: CGFloat(widthCm),
+            height: CGFloat(heightCm),
             mountType: mount
         )
         
@@ -883,6 +907,50 @@ class HangCalcViewModel: ObservableObject {
         // Reset spacing mode to auto when clearing
         spacingMode = .auto
     }
+    
+    // Unit conversion helpers
+    func formatForDisplay(_ cmValue: CGFloat) -> String {
+        let value = Double(cmValue)
+        if selectedUnit == .inches {
+            let inches = MeasurementConverter.cmToInches(value)
+            return MeasurementConverter.formatMeasurement(inches, unit: .inches)
+        } else {
+            return MeasurementConverter.formatMeasurement(value, unit: .centimeters)
+        }
+    }
+    
+    func formatCoordinate(_ cmValue: CGFloat) -> String {
+        let value = Double(cmValue)
+        if selectedUnit == .inches {
+            let inches = MeasurementConverter.cmToInches(value)
+            return MeasurementConverter.formatMeasurement(inches, unit: .inches)
+        } else {
+            return String(format: "%.1f", value)
+        }
+    }
+    
+    // Update default values when unit changes
+    func updateDefaultsForUnit() {
+        if selectedUnit == .inches {
+            if wallWidth == "300" { wallWidth = "118" } // 300 cm ≈ 118 inches
+            if wallHeight == "244" { wallHeight = "96" } // 244 cm ≈ 96 inches
+            if newPaintingWidth == "20" { newPaintingWidth = "8" } // 20 cm ≈ 8 inches
+            if newPaintingHeight == "25" { newPaintingHeight = "10" } // 25 cm ≈ 10 inches
+            if newWireOffset == "10" { newWireOffset = "4" } // 10 cm ≈ 4 inches
+            if newDRingOffsetTop == "10" { newDRingOffsetTop = "4" } // 10 cm ≈ 4 inches
+            if newDRingOffsetEdge == "10" { newDRingOffsetEdge = "4" } // 10 cm ≈ 4 inches
+            if manualSpacing == "200" { manualSpacing = "79" } // 200 cm ≈ 79 inches
+        } else {
+            if wallWidth == "118" { wallWidth = "300" }
+            if wallHeight == "96" { wallHeight = "244" }
+            if newPaintingWidth == "8" { newPaintingWidth = "20" }
+            if newPaintingHeight == "10" { newPaintingHeight = "25" }
+            if newWireOffset == "4" { newWireOffset = "10" }
+            if newDRingOffsetTop == "4" { newDRingOffsetTop = "10" }
+            if newDRingOffsetEdge == "4" { newDRingOffsetEdge = "10" }
+            if manualSpacing == "79" { manualSpacing = "200" }
+        }
+    }
 }
 
 struct ContentView: View {
@@ -900,13 +968,34 @@ struct ContentView: View {
             ZStack(alignment: .bottom) {
                 // Main controls (painting list, add, etc)
                 VStack(spacing: 0) {
-                    // App title
-                    Text("HangCalc")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(AppColors.textPrimary)
-                        .padding(.top, 20)
+                    // App title and unit selector
+                    VStack(spacing: 8) {
+                        Text("HangCalc")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                            .foregroundColor(AppColors.textPrimary)
+                            .padding(.top, 20)
+                        
+                        // Unit selector
+                        HStack(spacing: 12) {
+                            Text("Units:")
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.textSecondary)
+                            
+                            Picker("Units", selection: $viewModel.selectedUnit) {
+                                ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+                                    Text(unit.displayName).tag(unit)
+                                }
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                            .accentColor(AppColors.primary)
+                            .onChange(of: viewModel.selectedUnit) { _ in
+                                viewModel.updateDefaultsForUnit()
+                            }
+                        }
+                        .padding(.horizontal, 20)
                         .padding(.bottom, 10)
+                    }
                     
                     MainFormView(viewModel: viewModel)
                     Spacer(minLength: 0)
@@ -925,7 +1014,8 @@ struct ContentView: View {
                             layouts: viewModel.layouts,
                             paintings: viewModel.paintings,
                             spacingMode: viewModel.spacingMode,
-                            manualSpacing: viewModel.manualSpacing
+                            manualSpacing: viewModel.manualSpacing,
+                            viewModel: viewModel
                         )
                     }
                 } else {

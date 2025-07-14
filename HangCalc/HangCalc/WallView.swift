@@ -113,6 +113,7 @@ extension CGPoint {
 struct WallScrollView: View {
     let wall: Wall
     let layouts: [PaintingLayout]
+    @ObservedObject var viewModel: HangCalcViewModel
     @State private var scale: CGFloat = 1.0 // Default scale (1 px/cm)
     @GestureState private var gestureScale: CGFloat = 1.0
     
@@ -174,7 +175,7 @@ struct WallScrollView: View {
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 4)
                                         
-                                        Text(String(format: "Top: %.1f cm", offset))
+                                        Text("Top: \(viewModel.formatForDisplay(offset)) \(viewModel.selectedUnit.shortName)")
                                             .font(.caption)
                                             .frame(width: 120, alignment: .leading)
                                             .padding(.horizontal, 8)
@@ -182,7 +183,7 @@ struct WallScrollView: View {
                                         
                                         if layout.mountingPoints.count == 1 {
                                             let hanger = layout.mountingPoints[0]
-                                            Text(String(format: "(%.1f, %.1f)", hanger.x, hanger.y))
+                                            Text("(\(viewModel.formatCoordinate(hanger.x)), \(viewModel.formatCoordinate(hanger.y)))")
                                                 .font(.caption2)
                                                 .frame(width: 100, alignment: .leading)
                                                 .padding(.horizontal, 8)
@@ -202,7 +203,7 @@ struct WallScrollView: View {
                                             .padding(.horizontal, 8)
                                             .padding(.vertical, 4)
                                         
-                                        Text(String(format: "T:%.1f, E:%.1f", offsetTop, offsetEdge))
+                                        Text("T:\(viewModel.formatForDisplay(offsetTop)), E:\(viewModel.formatForDisplay(offsetEdge))")
                                             .font(.caption)
                                             .frame(width: 120, alignment: .leading)
                                             .padding(.horizontal, 8)
@@ -212,7 +213,7 @@ struct WallScrollView: View {
                                             let left = layout.mountingPoints[0]
                                             let right = layout.mountingPoints[1]
                                             let dist = hypot(right.x - left.x, right.y - left.y)
-                                            Text(String(format: "Δ=%.1f cm", dist))
+                                            Text("Δ=\(viewModel.formatForDisplay(dist)) \(viewModel.selectedUnit.shortName)")
                                                 .font(.caption2)
                                                 .frame(width: 100, alignment: .leading)
                                                 .padding(.horizontal, 8)
@@ -258,7 +259,7 @@ struct WallScrollView: View {
                     }
                     .buttonStyle(SecondaryButtonStyle())
                     
-                    Text(String(format: "Scale: %.1f px/cm", scale * gestureScale))
+                    Text(String(format: "Scale: %.1f px/%@", scale * gestureScale, viewModel.selectedUnit.shortName))
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
                         .padding(.horizontal, 8)
@@ -269,7 +270,7 @@ struct WallScrollView: View {
                 .padding(.bottom, 4)
                 GeometryReader { geo in
                     ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                        WallView(wall: wall, layouts: layouts, scale: scale * gestureScale)
+                        WallView(wall: wall, layouts: layouts, scale: scale * gestureScale, viewModel: viewModel)
                             .contentShape(Rectangle())
                             .gesture(
                                 MagnificationGesture()
@@ -298,6 +299,7 @@ struct WallView: View {
     let wall: Wall
     let layouts: [PaintingLayout]
     let scale: CGFloat
+    @ObservedObject var viewModel: HangCalcViewModel
     
     var body: some View {
         GeometryReader { geo in
@@ -357,7 +359,7 @@ struct WallView: View {
                         MeasurementArrow(
                             start: leftEdge,
                             end: rightEdge,
-                            label: String(format: "%.1f cm", distanceCm),
+                            label: "\(viewModel.formatForDisplay(distanceCm)) \(viewModel.selectedUnit.shortName)",
                             scale: scale
                         )
                     }
@@ -369,7 +371,7 @@ struct WallView: View {
                         MeasurementArrow(
                             start: wallLeft,
                             end: paintingLeft,
-                            label: String(format: "%.1f cm", distanceCm),
+                            label: "\(viewModel.formatForDisplay(distanceCm)) \(viewModel.selectedUnit.shortName)",
                             scale: scale
                         )
                     }
@@ -381,7 +383,7 @@ struct WallView: View {
                         MeasurementArrow(
                             start: paintingRight,
                             end: wallRight,
-                            label: String(format: "%.1f cm", distanceCm),
+                            label: "\(viewModel.formatForDisplay(distanceCm)) \(viewModel.selectedUnit.shortName)",
                             scale: scale
                         )
                     }
@@ -394,7 +396,7 @@ struct WallView: View {
                         MeasurementArrow(
                             start: paintingTop,
                             end: wallTop,
-                            label: String(format: "%.1f cm", topDistance),
+                            label: "\(viewModel.formatForDisplay(topDistance)) \(viewModel.selectedUnit.shortName)",
                             scale: scale
                         )
                         // Bottom to wall bottom
@@ -404,7 +406,7 @@ struct WallView: View {
                         MeasurementArrow(
                             start: wallBottom,
                             end: paintingBottom,
-                            label: String(format: "%.1f cm", bottomDistance),
+                            label: "\(viewModel.formatForDisplay(bottomDistance)) \(viewModel.selectedUnit.shortName)",
                             scale: scale
                         )
                     }
