@@ -214,6 +214,10 @@ struct AddPaintingSection: View {
                         .foregroundColor(AppColors.textSecondary)
                     TextField("e.g. Mona Lisa", text: $viewModel.newPaintingName)
                         .textFieldStyle(ProfessionalTextFieldStyle())
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(viewModel.newPaintingNameError ? AppColors.error : AppColors.secondary, lineWidth: 1)
+                        )
                 }
                 
                 HStack(spacing: 16) {
@@ -224,6 +228,10 @@ struct AddPaintingSection: View {
                         TextField(viewModel.selectedUnit == .inches ? "8" : "20", text: $viewModel.newPaintingWidth)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(viewModel.newPaintingWidthError ? AppColors.error : AppColors.secondary, lineWidth: 1)
+                            )
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
@@ -233,6 +241,10 @@ struct AddPaintingSection: View {
                         TextField(viewModel.selectedUnit == .inches ? "10" : "25", text: $viewModel.newPaintingHeight)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(viewModel.newPaintingHeightError ? AppColors.error : AppColors.secondary, lineWidth: 1)
+                            )
                     }
                 }
                 
@@ -256,6 +268,10 @@ struct AddPaintingSection: View {
                         TextField(viewModel.selectedUnit == .inches ? "4" : "10", text: $viewModel.newWireOffset)
                             .keyboardType(.decimalPad)
                             .textFieldStyle(ProfessionalTextFieldStyle())
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(viewModel.newWireOffsetError ? AppColors.error : AppColors.secondary, lineWidth: 1)
+                            )
                     }
                 } else if viewModel.newMountTypeIndex == D_RING_INDEX {
                     VStack(alignment: .leading, spacing: 12) {
@@ -266,6 +282,10 @@ struct AddPaintingSection: View {
                             TextField(viewModel.selectedUnit == .inches ? "4" : "10", text: $viewModel.newDRingOffsetTop)
                                 .keyboardType(.decimalPad)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(viewModel.newDRingOffsetTopError ? AppColors.error : AppColors.secondary, lineWidth: 1)
+                                )
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
@@ -275,16 +295,40 @@ struct AddPaintingSection: View {
                             TextField(viewModel.selectedUnit == .inches ? "2" : "5", text: $viewModel.newDRingOffsetEdge)
                                 .keyboardType(.decimalPad)
                                 .textFieldStyle(ProfessionalTextFieldStyle())
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(viewModel.newDRingOffsetEdgeError ? AppColors.error : AppColors.secondary, lineWidth: 1)
+                                )
                         }
                     }
                 }
                 
                 Button(action: {
-                    guard
-                        let w = MeasurementConverter.parseMeasurement(viewModel.newPaintingWidth, unit: viewModel.selectedUnit), w > 0,
-                        let h = MeasurementConverter.parseMeasurement(viewModel.newPaintingHeight, unit: viewModel.selectedUnit), h > 0,
-                        !viewModel.newPaintingName.isEmpty
+                    // Validate fields
+                    viewModel.newPaintingNameError = viewModel.newPaintingName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    viewModel.newPaintingWidthError = MeasurementConverter.parseMeasurement(viewModel.newPaintingWidth, unit: viewModel.selectedUnit) == nil || (MeasurementConverter.parseMeasurement(viewModel.newPaintingWidth, unit: viewModel.selectedUnit) ?? 0) <= 0
+                    viewModel.newPaintingHeightError = MeasurementConverter.parseMeasurement(viewModel.newPaintingHeight, unit: viewModel.selectedUnit) == nil || (MeasurementConverter.parseMeasurement(viewModel.newPaintingHeight, unit: viewModel.selectedUnit) ?? 0) <= 0
+                    if viewModel.newMountTypeIndex == WIRE_INDEX {
+                        viewModel.newWireOffsetError = MeasurementConverter.parseMeasurement(viewModel.newWireOffset, unit: viewModel.selectedUnit) == nil || (MeasurementConverter.parseMeasurement(viewModel.newWireOffset, unit: viewModel.selectedUnit) ?? -1) < 0
+                        viewModel.newDRingOffsetTopError = false
+                        viewModel.newDRingOffsetEdgeError = false
+                    } else {
+                        viewModel.newWireOffsetError = false
+                        viewModel.newDRingOffsetTopError = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetTop, unit: viewModel.selectedUnit) == nil || (MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetTop, unit: viewModel.selectedUnit) ?? -1) < 0
+                        viewModel.newDRingOffsetEdgeError = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetEdge, unit: viewModel.selectedUnit) == nil || (MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetEdge, unit: viewModel.selectedUnit) ?? -1) < 0
+                    }
+                    // If any errors, do not proceed
+                    guard !viewModel.newPaintingNameError,
+                          !viewModel.newPaintingWidthError,
+                          !viewModel.newPaintingHeightError,
+                          !viewModel.newWireOffsetError,
+                          !viewModel.newDRingOffsetTopError,
+                          !viewModel.newDRingOffsetEdgeError
                     else { return }
+
+                    // Parse values after validation
+                    let w = MeasurementConverter.parseMeasurement(viewModel.newPaintingWidth, unit: viewModel.selectedUnit)!
+                    let h = MeasurementConverter.parseMeasurement(viewModel.newPaintingHeight, unit: viewModel.selectedUnit)!
 
                     // Convert to cm for internal storage
                     let widthCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(w) : w
@@ -292,14 +336,12 @@ struct AddPaintingSection: View {
 
                     let mount: MountType
                     if viewModel.newMountTypeIndex == WIRE_INDEX {
-                        guard let offset = MeasurementConverter.parseMeasurement(viewModel.newWireOffset, unit: viewModel.selectedUnit), offset >= 0 else { return }
+                        let offset = MeasurementConverter.parseMeasurement(viewModel.newWireOffset, unit: viewModel.selectedUnit)!
                         let offsetCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(offset) : offset
                         mount = .wire(offsetFromTop: CGFloat(offsetCm))
                     } else {
-                        guard
-                            let offsetTop = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetTop, unit: viewModel.selectedUnit), offsetTop >= 0,
-                            let offsetEdge = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetEdge, unit: viewModel.selectedUnit), offsetEdge >= 0
-                        else { return }
+                        let offsetTop = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetTop, unit: viewModel.selectedUnit)!
+                        let offsetEdge = MeasurementConverter.parseMeasurement(viewModel.newDRingOffsetEdge, unit: viewModel.selectedUnit)!
                         let offsetTopCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(offsetTop) : offsetTop
                         let offsetEdgeCm = viewModel.selectedUnit == .inches ? MeasurementConverter.inchesToCm(offsetEdge) : offsetEdge
                         mount = .dRing(offsetFromTop: CGFloat(offsetTopCm), offsetFromEdge: CGFloat(offsetEdgeCm))
@@ -313,6 +355,14 @@ struct AddPaintingSection: View {
                     viewModel.newDRingOffsetTop = viewModel.selectedUnit == .inches ? "4" : "10"
                     viewModel.newDRingOffsetEdge = viewModel.selectedUnit == .inches ? "2" : "5"
                     viewModel.newMountTypeIndex = WIRE_INDEX // default to Wire
+
+                    // Reset error states on success
+                    viewModel.newPaintingNameError = false
+                    viewModel.newPaintingWidthError = false
+                    viewModel.newPaintingHeightError = false
+                    viewModel.newWireOffsetError = false
+                    viewModel.newDRingOffsetTopError = false
+                    viewModel.newDRingOffsetEdgeError = false
                 }) {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
@@ -435,7 +485,7 @@ struct HangerCoordinatesView: View {
                 switch painting.mountType {
                 case .wire(let offset):
                     let hangerPoint = layout.mountingPoints.first ?? CGPoint.zero
-                    Text("Wire: (\(viewModel.formatCoordinate(hangerPoint.x)) from left, \(viewModel.formatCoordinate(hangerPoint.y)) from floor) \(viewModel.selectedUnit.shortName)")
+                    Text("Wire: (\(viewModel.formatCoordinate(hangerPoint.x)) ➡️, \(viewModel.formatCoordinate(hangerPoint.y)) ⬆️) \(viewModel.selectedUnit.shortName)")
                         .font(.caption2)
                         .foregroundColor(AppColors.textSecondary)
                         .padding(.horizontal, 6)
@@ -448,10 +498,10 @@ struct HangerCoordinatesView: View {
                         let leftPoint = layout.mountingPoints[0]
                         let rightPoint = layout.mountingPoints[1]
                         VStack(alignment: .leading, spacing: 1) {
-                            Text("Left: (\(viewModel.formatCoordinate(leftPoint.x)) from left, \(viewModel.formatCoordinate(leftPoint.y)) from floor) \(viewModel.selectedUnit.shortName)")
+                            Text("Left: (\(viewModel.formatCoordinate(leftPoint.x)) ➡️, \(viewModel.formatCoordinate(leftPoint.y)) ⬆️) \(viewModel.selectedUnit.shortName)")
                                 .font(.caption2)
                                 .foregroundColor(AppColors.textSecondary)
-                                                         Text("Right: (\(viewModel.formatCoordinate(rightPoint.x)) from left, \(viewModel.formatCoordinate(rightPoint.y)) from flo  or) \(viewModel.selectedUnit.shortName)")
+                                                         Text("Right: (\(viewModel.formatCoordinate(rightPoint.x)) ➡️, \(viewModel.formatCoordinate(rightPoint.y)) ⬆️) \(viewModel.selectedUnit.shortName)")
                                 .font(.caption2)
                                 .foregroundColor(AppColors.textSecondary)
                         }
@@ -779,6 +829,14 @@ class HangCalcViewModel: ObservableObject {
     @Published var editWireOffset: String = ""
     @Published var editDRingOffsetTop: String = ""
     @Published var editDRingOffsetEdge: String = ""
+    
+    // Error states for Add Painting form
+    @Published var newPaintingNameError: Bool = false
+    @Published var newPaintingWidthError: Bool = false
+    @Published var newPaintingHeightError: Bool = false
+    @Published var newWireOffsetError: Bool = false
+    @Published var newDRingOffsetTopError: Bool = false
+    @Published var newDRingOffsetEdgeError: Bool = false
     
     var wall: Wall? {
         guard let w = MeasurementConverter.parseMeasurement(wallWidth, unit: selectedUnit),
